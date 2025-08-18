@@ -1,8 +1,7 @@
 import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } from "discord.js";
 import OpenAI from "openai";
-import { attachMcpTools } from "./mcpClient";
-import { detectBudget } from "@core/price";
-import { buildTierList } from "@core/tier";
+import { attachMcpTools } from "./mcpClient.js";
+import { detectBudget, buildTierList } from "@core";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const discord = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });

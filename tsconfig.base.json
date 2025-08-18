@@ -8,11 +8,6 @@
         "skipLibCheck": true,
         "resolveJsonModule": true,
         "outDir": "dist",
-        "baseUrl": ".",
-        "paths": {
-            "@core/*": [
-                "packages/core/src/*"
-            ]
-        }
+        "baseUrl": "."
     }
 }

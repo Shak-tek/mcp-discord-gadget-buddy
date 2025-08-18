@@ -1,8 +1,10 @@
 export type Money = { value: number, currency: string, qualifier?: "under" | "over" | "around" | "range" };
-const CURRENCY = /(?<cur>[$€£]|USD|EUR|GBP)/i;
-const NUM = /(?:\d{1,3}(?:[.,]\d{3})*|\d+)(?:[.,]\d+)?/;
-const RANGE = new RegExp(`(?:${CURRENCY.source}\\s*)?(${NUM.source})\\s*(?:-|to|–|—)\\s*(?:${CURRENCY.source}\\s*)?(${NUM.source})`, "i");
-const SINGLE = new RegExp(`(?:(under|below|<=|less than|around|~|about|approx\\.)\\s*)?(?:${CURRENCY.source}\\s*)?(${NUM.source})`, "i");
+const CURRENCY = /[$€£]|USD|EUR|GBP/; // no named group
+const NUM = /((?:\d{1,3}(?:[.,]\d{3})*|\d+)(?:[.,]\d+)?)/;
+const RANGE = new RegExp(
+    `(?:${CURRENCY.source}\\s*)?${NUM.source}\\s*(?:-|to|–|—)\\s*(?:${CURRENCY.source}\\s*)?${NUM.source}`,
+    "i"
+); const SINGLE = new RegExp(`(?:(under|below|<=|less than|around|~|about|approx\\.)\\s*)?(?:${CURRENCY.source}\\s*)?(${NUM.source})`, "i");
 
 export function detectBudget(text: string): Money | null {
     const r = text.match(RANGE);

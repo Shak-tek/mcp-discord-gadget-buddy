@@ -3,9 +3,18 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "build": "pnpm -r build",
-    "dev": "pnpm -r --parallel dev",
-    "start": "pnpm --filter discord-bot start"
+    "dev:bot": "cross-env DOTENV_CONFIG_PATH=.env tsx -r tsconfig-paths/register apps/discord-bot/src/bot.ts",
+    "dev:reddit": "cross-env DOTENV_CONFIG_PATH=.env tsx -r tsconfig-paths/register apps/mcp-server-reddit/src/server.ts",
+    "dev": "concurrently -n reddit,discord -c auto \"pnpm dev:reddit\" \"pnpm dev:bot\"",
+    "build": "pnpm -r build"
   },
-  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"
+  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "cross-env": "^10.0.0",
+    "dotenv": "^16.6.1",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
+  }
 }

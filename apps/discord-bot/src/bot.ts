@@ -1,14 +1,31 @@
+import "dotenv/config";
+import { replySafely } from "./util/replySafely";
 import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } from "discord.js";
 import OpenAI from "openai";
 import { attachMcpTools } from "./mcpClient.js";
-import { detectBudget, buildTierList } from "@core";
-
+import { detectBudget } from "../../../packages/core/src/price";
+import { buildTierList } from "../../../packages/core/src/tier";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const discord = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 const commands = [
-    new SlashCommandBuilder().setName("tierlist").setDescription("Build a tier list").addStringOption(o => o.setName("query").setDescription("e.g. 'best ANC earbuds under €150 from reddit'").setRequired(true)),
-    new SlashCommandBuilder().setName("browse").setDescription("Ask the bot to browse").addStringOption(o => o.setName("query").setRequired(true))
+    new SlashCommandBuilder()
+        .setName("tierlist")
+        .setDescription("Build a tier list")
+        .addStringOption(o =>
+            o.setName("query")
+                .setDescription("e.g. 'best ANC earbuds under €150 from reddit'")
+                .setRequired(true)
+        ),
+
+    new SlashCommandBuilder()
+        .setName("browse")
+        .setDescription("Ask the bot to browse")
+        .addStringOption(o =>
+            o.setName("query")
+                .setDescription("What should I look up?")
+                .setRequired(true)
+        ),
 ].map(c => c.toJSON());
 
 discord.once("ready", async () => {
@@ -48,7 +65,8 @@ discord.on("interactionCreate", async (i) => {
     // (Optionally) post-process run output to enforce the tier structure
     // Or let the model return structured JSON and parse here.
 
-    await i.editReply(run.choices[0].message.content || "Done.");
+    const output = run.choices[0].message.content || "Done.";
+    await replySafely(i, output);
 });
 
 discord.login(process.env.DISCORD_TOKEN);

@@ -1,0 +1,20 @@
+{
+    "name": "mcp-server-reddit",
+    "version": "0.1.0",
+    "type": "module",
+    "main": "dist/server.js",
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "dev": "tsx watch src/server.ts",
+        "start": "node dist/server.js"
+    },
+    "dependencies": {
+        "express": "^4.19.2",
+        "node-fetch": "^3.3.2",
+        "dotenv": "^16.4.5"
+    },
+    "devDependencies": {
+        "tsx": "^4.19.1",
+        "typescript": "^5.5.4"
+    }
+}

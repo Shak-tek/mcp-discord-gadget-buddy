@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  mcp-browser:
+    build: ./apps/mcp-server-browser
+    ports: ["8080:8080"]
+
+  mcp-reddit:
+    build: ./apps/mcp-server-reddit
+    environment:
+      - REDDIT_CLIENT_ID
+      - REDDIT_CLIENT_SECRET
+      - REDDIT_REFRESH_TOKEN
+      - REDDIT_ACCESS_TOKEN
+    ports: ["7331:7331"]
+
+  discord-bot:
+    build: ./apps/discord-bot
+    environment:
+      - OPENAI_API_KEY
+      - DISCORD_APP_ID
+      - DISCORD_TOKEN
+      - MCP_BROWSER_URL=http://mcp-browser:8080/mcp
+      - MCP_REDDIT_URL=http://mcp-reddit:7331/mcp
+    depends_on: [mcp-browser, mcp-reddit]

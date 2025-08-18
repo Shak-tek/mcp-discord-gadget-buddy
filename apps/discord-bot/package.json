@@ -1,0 +1,22 @@
+{
+    "name": "discord-bot",
+    "version": "0.1.0",
+    "type": "module",
+    "main": "dist/bot.js",
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "dev": "tsx watch src/bot.ts",
+        "start": "node dist/bot.js"
+    },
+    "dependencies": {
+        "discord.js": "^14.15.3",
+        "dotenv": "^16.4.5",
+        "openai": "^4.56.0",
+        "@core": "workspace:*",
+        "node-fetch": "^3.3.2"
+    },
+    "devDependencies": {
+        "tsx": "^4.19.1",
+        "typescript": "^5.5.4"
+    }
+}

@@ -9,6 +9,7 @@ import {
     DiscordAPIError,
 } from "discord.js";
 import OpenAI from "openai";
+import fetch from "node-fetch";
 import { attachMcpTools } from "./mcpClient.js";
 // keep relative core imports since your runtime is already using them
 import { detectBudget } from "../../../packages/core/src/price";
@@ -45,6 +46,15 @@ const commands = [
             o
                 .setName("query")
                 .setDescription("What should I look up?")
+                .setRequired(true)
+        ),
+    new SlashCommandBuilder()
+        .setName("info")
+        .setDescription("Summarize Reddit reviews for a product")
+        .addStringOption((o) =>
+            o
+                .setName("query")
+                .setDescription("Product name to look up")
                 .setRequired(true)
         ),
 ].map((c) => c.toJSON());
@@ -89,6 +99,52 @@ discord.on("interactionCreate", async (i) => {
 
     try {
         const userText = i.options.getString("query", true);
+
+        if (i.commandName === "info") {
+            const r = await fetch(`${process.env.MCP_REDDIT_URL}/mcp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    tool: "search_subreddits",
+                    input: { query: `${userText} review`, sort: "relevance", limit: 5 },
+                }),
+            });
+            const j: any = await r.json();
+            if (!j.ok) throw new Error(j.error || "Reddit search failed");
+            const posts: any[] = j.result.data.children;
+            if (!posts.length) {
+                await i.editReply("No Reddit posts found.");
+                return;
+            }
+            const context = posts
+                .map(
+                    (p: any, idx: number) =>
+                        `Post ${idx + 1} title: ${p.data.title}\nText: ${
+                            (p.data.selftext || "").slice(0, 500)
+                        }`
+                )
+                .join("\n\n");
+            const sumRun = await openai.chat.completions.create({
+                model: "gpt-4.1-mini",
+                messages: [
+                    {
+                        role: "system",
+                        content:
+                            "Summarize the overall sentiment and key points from these Reddit posts about the product.",
+                    },
+                    { role: "user", content: context },
+                ],
+            });
+            const summary =
+                sumRun.choices[0].message.content || "No summary.";
+            const links = posts
+                .map((p: any) => `- https://reddit.com${p.data.permalink}`)
+                .join("\n");
+            const output = `${summary}\n\nLinks:\n${links}`;
+            await replySafely(i, output);
+            return;
+        }
+
         const budget = detectBudget(userText);
 
         // (optional) connect MCP tools if/when you wire them into the model

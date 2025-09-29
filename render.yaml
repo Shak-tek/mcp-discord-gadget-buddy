@@ -1,0 +1,42 @@
+services:
+  # Web service: Reddit MCP server
+  - type: web
+    name: reddit-mcp
+    runtime: node           # was: env
+    plan: free              # web can be free
+    buildCommand: pnpm install --frozen-lockfile
+    startCommand: pnpm start:reddit
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: REDDIT_REFRESH_TOKEN
+        sync: false
+
+  # Worker: Discord bot
+  - type: worker
+    name: gadgetbuddy-bot
+    runtime: node           # was: env
+    plan: starter           # workers can’t be free
+    buildCommand: pnpm install --frozen-lockfile
+    startCommand: pnpm start:bot
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_APP_ID
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false
+      # No string interpolation in render.yaml, so expose host:port from the web service
+      - key: MCP_REDDIT_HOSTPORT
+        fromService:
+          name: reddit-mcp
+          type: web
+          property: hostport

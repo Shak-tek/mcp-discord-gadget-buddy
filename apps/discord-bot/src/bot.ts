@@ -11,9 +11,16 @@ import {
 import OpenAI from "openai";
 import fetch from "node-fetch";
 import { attachMcpTools } from "./mcpClient.js";
-// keep relative core imports since your runtime is already using them
 import { detectBudget } from "../../../packages/core/src/price";
 import { buildTierList } from "../../../packages/core/src/tier";
+
+// --- MCP URL normalizer -------------------------------------------
+const ensureMcpPath = (base?: string) => {
+    const b = (base || "http://localhost:7331").replace(/\/+$/, "");
+    return b.endsWith("/mcp") ? b : `${b}/mcp`;
+};
+const MCP_REDDIT = ensureMcpPath(process.env.MCP_REDDIT_URL);
+// ------------------------------------------------------------------
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -43,27 +50,19 @@ const commands = [
         .setName("browse")
         .setDescription("Ask the bot to browse")
         .addStringOption((o) =>
-            o
-                .setName("query")
-                .setDescription("What should I look up?")
-                .setRequired(true)
+            o.setName("query").setDescription("What should I look up?").setRequired(true)
         ),
     new SlashCommandBuilder()
         .setName("info")
         .setDescription("Summarize Reddit reviews for a product")
         .addStringOption((o) =>
-            o
-                .setName("query")
-                .setDescription("Product name to look up")
-                .setRequired(true)
+            o.setName("query").setDescription("Product name to look up").setRequired(true)
         ),
 ].map((c) => c.toJSON());
 
 // ----- ready / register commands -----
 discord.once("ready", async () => {
-    const rest = new REST({ version: "10" }).setToken(
-        process.env.DISCORD_TOKEN!
-    );
+    const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN!);
 
     if (process.env.DISCORD_GUILD_ID) {
         await rest.put(
@@ -75,10 +74,9 @@ discord.once("ready", async () => {
         );
         console.log("Registered GUILD commands.");
     } else {
-        await rest.put(
-            Routes.applicationCommands(process.env.DISCORD_APP_ID!),
-            { body: commands }
-        );
+        await rest.put(Routes.applicationCommands(process.env.DISCORD_APP_ID!), {
+            body: commands,
+        });
         console.log("Registered GLOBAL commands (may take time to appear).");
     }
 
@@ -89,11 +87,11 @@ discord.once("ready", async () => {
 discord.on("interactionCreate", async (i) => {
     if (!i.isChatInputCommand()) return;
 
-    // acknowledge immediately to avoid 10062
+    // acknowledge immediately (prevents 10062)
     try {
-        await i.deferReply({ ephemeral: false });
+        await i.deferReply(); // (no { ephemeral } — deprecated warning)
     } catch (err) {
-        if (isUnknownInteraction(err)) return; // token expired/reloaded mid-run
+        if (isUnknownInteraction(err)) return;
         throw err;
     }
 
@@ -101,7 +99,8 @@ discord.on("interactionCreate", async (i) => {
         const userText = i.options.getString("query", true);
 
         if (i.commandName === "info") {
-            const r = await fetch(`${process.env.MCP_REDDIT_URL}/mcp`, {
+            // use normalized MCP endpoint
+            const r = await fetch(MCP_REDDIT, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -109,21 +108,25 @@ discord.on("interactionCreate", async (i) => {
                     input: { query: `${userText} review`, sort: "relevance", limit: 5 },
                 }),
             });
-            const j: any = await r.json();
-            if (!j.ok) throw new Error(j.error || "Reddit search failed");
-            const posts: any[] = j.result.data.children;
+            const j: any = await r.json().catch(() => ({}));
+            if (!r.ok || !j?.ok) {
+                throw new Error(j?.error || `Reddit search failed (${r.status})`);
+            }
+
+            const posts: any[] = j.result?.data?.children ?? [];
             if (!posts.length) {
                 await i.editReply("No Reddit posts found.");
                 return;
             }
+
             const context = posts
                 .map(
                     (p: any, idx: number) =>
-                        `Post ${idx + 1} title: ${p.data.title}\nText: ${
-                            (p.data.selftext || "").slice(0, 500)
+                        `Post ${idx + 1} title: ${p.data.title}\nText: ${(p.data.selftext || "").slice(0, 500)
                         }`
                 )
                 .join("\n\n");
+
             const sumRun = await openai.chat.completions.create({
                 model: "gpt-4.1-mini",
                 messages: [
@@ -135,8 +138,8 @@ discord.on("interactionCreate", async (i) => {
                     { role: "user", content: context },
                 ],
             });
-            const summary =
-                sumRun.choices[0].message.content || "No summary.";
+
+            const summary = sumRun.choices[0].message.content || "No summary.";
             const links = posts
                 .map((p: any) => `- https://reddit.com${p.data.permalink}`)
                 .join("\n");
@@ -147,13 +150,6 @@ discord.on("interactionCreate", async (i) => {
 
         const budget = detectBudget(userText);
 
-        // (optional) connect MCP tools if/when you wire them into the model
-        // const tools = await attachMcpTools([
-        //   { name: "browser", url: process.env.MCP_BROWSER_URL! },
-        //   { name: "reddit",  url: process.env.MCP_REDDIT_URL! }
-        // ]);
-
-        // tighter, length-safe system prompt
         const sys = [
             "You are GadgetBuddy.",
             "Return a concise Markdown table: Tier | Model | Why | Price.",
@@ -174,7 +170,7 @@ discord.on("interactionCreate", async (i) => {
                             : ""),
                 },
             ],
-            // when you wire MCP: tools: tools.asOpenAITools()
+            // when you wire MCP tools: tools: tools.asOpenAITools()
         });
 
         const output = run.choices[0].message.content || "Done.";

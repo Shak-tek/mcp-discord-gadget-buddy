@@ -15,11 +15,15 @@ import { detectBudget } from "../../../packages/core/src/price";
 import { buildTierList } from "../../../packages/core/src/tier";
 
 // --- MCP URL normalizer -------------------------------------------
-const ensureMcpPath = (base?: string) => {
-    const b = (base || "http://localhost:7331").replace(/\/+$/, "");
-    return b.endsWith("/mcp") ? b : `${b}/mcp`;
-};
-const MCP_REDDIT = ensureMcpPath(process.env.MCP_REDDIT_URL);
+const baseFromRender = process.env.MCP_REDDIT_HOSTPORT
+    ? `http://${process.env.MCP_REDDIT_HOSTPORT}`
+    : process.env.MCP_REDDIT_URL || "http://localhost:7331";
+
+const ensureMcpPath = (base: string) =>
+    base.replace(/\/+$/, "").replace(/\/mcp$/, "") + "/mcp";
+
+const MCP_REDDIT = ensureMcpPath(baseFromRender);
+
 // ------------------------------------------------------------------
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });

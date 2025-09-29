@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { replySafely } from "./util/replySafely";
+import { replySafely } from "./util/replySafely.js";
 import {
     Client,
     GatewayIntentBits,
@@ -11,8 +11,7 @@ import {
 import OpenAI from "openai";
 import fetch from "node-fetch";
 import { attachMcpTools } from "./mcpClient.js";
-import { detectBudget } from "../../../packages/core/src/price";
-import { buildTierList } from "../../../packages/core/src/tier";
+import { detectBudget, buildTierList } from "@gadget-buddy/core";
 
 // --- MCP URL normalizer -------------------------------------------
 const baseFromRender = process.env.MCP_REDDIT_HOSTPORT

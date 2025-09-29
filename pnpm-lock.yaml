@@ -29,7 +29,7 @@ importers:
 
   apps/discord-bot:
     dependencies:
-      '@core':
+      '@gadget-buddy/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@types/express':

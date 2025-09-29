@@ -1,2 +1,2 @@
-export * from "./price";
-export * from "./tier";
+export * from "./price.js";
+export * from "./tier.js";

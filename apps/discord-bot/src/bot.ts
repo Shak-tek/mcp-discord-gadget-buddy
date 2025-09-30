@@ -156,7 +156,7 @@ discord.on("interactionCreate", async (i) => {
         const sys = [
             "You are GadgetBuddy.",
             "Return a concise Markdown table: Tier | Model | Why | Price.",
-            "Keep total under 1800 characters. Give a summary at the end about wchich one you recommend and give a url for a review of it.",
+            "Keep total under 1800 characters.",
             "Tiers: S/A/B/C/D. Respect the user's budget if provided.",
         ].join("\n");
 
